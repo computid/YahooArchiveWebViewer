@@ -3,11 +3,12 @@ require( 'express-async-errors');
 var router = express.Router();
 const pg = require("pg");
 
+const postgresConnectionString = 'postgres://postgres:postgres@localhost:5432/messages';
+
 /* GET home page. */
 router.get('/', async function(req, res, next) {
-  const cs = 'postgres://postgres:postgres@localhost:5432/messages';
 
-  const client = new pg.Client(cs);
+  const client = new pg.Client(postgresConnectionString);
   client.connect();
 
   const sql = 'select * from public.topics order by topicid;';
@@ -18,15 +19,13 @@ router.get('/', async function(req, res, next) {
     const res = await client.query(sql)
     if (res.rows.length > 0) {
       for(let i = 0; i < res.rows.length; i++) {
-        tableView += "<tr><td>"+res.rows[i].topicid+"</td><td><a href=\"messages?topicid="+res.rows[i].topicid+"\">"+res.rows[i].subject+"</a></td></tr>";
+        tableView += "<tr><td><a href=\"messages?topicid="+res.rows[i].topicid+"\">"+res.rows[i].topicid+"</a></td><td><a href=\"messages?topicid="+res.rows[i].topicid+"\">"+res.rows[i].subject+"</a></td></tr>";
       }
     } else {
       console.log("No valid topics found.");
     }
   }catch (err) {
     console.log(err.stack)
-    console.log("error");
-    console.log(err);
   }
   res.render('index', { title: 'Minari Yahoo Groups Archive Viewer V1.0',
     table: tableView
@@ -37,9 +36,8 @@ router.get('/', async function(req, res, next) {
 router.get('/messages', async function(req, res, next) {
 
   let topicID = req.query.topicid;
-  const cs = 'postgres://postgres:postgres@localhost:5432/messages';
 
-  const client = new pg.Client(cs);
+  const client = new pg.Client(postgresConnectionString);
   client.connect();
 
   const sql = 'select * from messages m left join topics t on t.topicid =m.topicid where m.topicid = $1 order by m.msgid ;';
@@ -71,8 +69,6 @@ router.get('/messages', async function(req, res, next) {
     }
   }catch (err) {
     console.log(err.stack)
-    console.log("error");
-    console.log(err);
   }
   res.render('index', { title: 'Minari Yahoo Groups Archive Viewer',
     table: tableView
